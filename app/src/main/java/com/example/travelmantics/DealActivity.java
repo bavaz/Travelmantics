@@ -12,7 +12,7 @@ import android.widget.Toast;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
-public class InsertActivity extends AppCompatActivity {
+public class DealActivity extends AppCompatActivity {
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDatabaseReference;
 
@@ -26,7 +26,7 @@ public class InsertActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         FirebaseUtil.openFbReference("traveldeals");
         mFirebaseDatabase = FirebaseUtil.mFirebaseDatabase;
-        mDatabaseReference = FirebaseUtil.mDatabaseReference;
+        mDatabaseReference = FirebaseUtil.mDatabaseReference;  
 
         txtTitle = findViewById(R.id.txtTitle);
         txtPrice = findViewById(R.id.txtPrice);
