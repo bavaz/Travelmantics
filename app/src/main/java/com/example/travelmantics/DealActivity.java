@@ -1,25 +1,38 @@
 package com.example.travelmantics;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.content.res.Resources;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+import com.squareup.picasso.Picasso;
 
 public class DealActivity extends AppCompatActivity {
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDatabaseReference;
 
+    private static final int PICTURE_RESULT = 42; // random int
+
     EditText txtTitle;
     EditText txtPrice;
     EditText txtDescription;
+    ImageView imageView;
     private TravelDeal deal;
 
     @Override
@@ -33,6 +46,7 @@ public class DealActivity extends AppCompatActivity {
         txtTitle = findViewById(R.id.txtTitle);
         txtPrice = findViewById(R.id.txtPrice);
         txtDescription = findViewById(R.id.txtDescription);
+        imageView = findViewById(R.id.image);
 
         Intent intent = getIntent();
         TravelDeal deal = (TravelDeal) intent.getSerializableExtra("Deal");
@@ -44,6 +58,18 @@ public class DealActivity extends AppCompatActivity {
         txtTitle.setText(deal.getTitle());
         txtDescription.setText(deal.getDescription());
         txtPrice.setText(deal.getPrice());
+        showImage(deal.getImageUrl());
+
+        Button btnImage = findViewById(R.id.btnImage);
+        btnImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("image/jpeg");
+                intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true); // Allow only images on device (local)
+                startActivityForResult(intent.createChooser(intent, "Insert Picture"), PICTURE_RESULT);
+            }
+        });
     }
 
     @Override
@@ -63,6 +89,23 @@ public class DealActivity extends AppCompatActivity {
             enableEditTexts(false);
         }
         return true;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == PICTURE_RESULT && resultCode == RESULT_OK){
+            Uri imageUri = data.getData();
+            StorageReference ref = FirebaseUtil.mStorageRef.child(imageUri.getLastPathSegment());
+            ref.putFile(imageUri).addOnSuccessListener(this, new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                    String url = taskSnapshot.getMetadata().getReference().getDownloadUrl().toString();
+                    deal.setImageUrl(url);
+                    showImage(url);
+                }
+            });
+        }
     }
 
     @Override
@@ -120,5 +163,16 @@ public class DealActivity extends AppCompatActivity {
         txtTitle.setEnabled(isEnabled);
         txtPrice.setEnabled(isEnabled);
         txtDescription.setEnabled(isEnabled);
+    }
+
+    private void showImage(String url){
+        if(url != null && !url.isEmpty()){
+            int width = Resources.getSystem().getDisplayMetrics().widthPixels;
+            Picasso.get()
+                    .load(url)
+                    .resize(width, width*2/3)
+                    .centerCrop()
+                    .into(imageView);
+        }
     }
 }
